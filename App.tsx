@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import RootDrawerNavigator from './routes/drawer';
 import { NavigationContainer } from '@react-navigation/native';
 

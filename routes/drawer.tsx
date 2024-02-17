@@ -1,5 +1,4 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import React, { useState } from 'react';
 
 // Screens
 import Home from '../screens/home';
