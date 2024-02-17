@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { Notification } from 'expo-notifications';
+import { PermissionStatus } from 'expo-modules-core';
 
 type BankDiscount = {
   name: string,
@@ -28,6 +30,28 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
     }
 });
 
+const getLocationPermissions = async() => {
+  let { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== 'granted') {
+    console.log('Permission to access location was denied');
+    return;
+  } else if(status === 'granted') {
+    try {
+      let backPerm = await Location.requestBackgroundPermissionsAsync();
+      console.log("0 -> ", backPerm);
+      if(backPerm.status === 'granted' ) {
+        console.log("Here123")
+        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: Location.Accuracy.Balanced,
+          deferredUpdatesDistance: 10
+        });
+      }
+    } catch(error) {
+      console.log(error);
+    }
+  }
+}
+
 function Home() {
   const [dealList, setDealList] = useState<BankDiscount[]>([]);
   const [location, setLocation] = useState<any>(null);
@@ -37,6 +61,9 @@ function Home() {
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
+  const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
+    PermissionStatus.UNDETERMINED,
+  );
 
   //Red Pepper Taqueria - Coordinates 33.81693, -84.33439
   //Apartment - Coordinates 33.8021, -84.33828
@@ -68,6 +95,8 @@ function Home() {
       if(dealListNew) {
         setDealList([ ...dealListNew ]);
       }
+      await getLocationPermissions();
+      await requestNotificationPermissions();
       await getLocation();
       setInterval(async() => {
         const currentLocation = await getStoredData('location');
@@ -78,6 +107,14 @@ function Home() {
       }, 3000);
     })();
   }, []);
+
+  useEffect(() => {
+    if (notificationPermissions !== PermissionStatus.GRANTED) {
+      return;
+    }
+    const listener = Notifications.addNotificationReceivedListener(handleNotification);
+    return () => listener.remove();
+  }, [notificationPermissions]);
 
   useEffect(() => {
     if(location && location.coords) {
@@ -116,6 +153,17 @@ function Home() {
       })();
     }
   }, [location, dealList]);
+
+  const handleNotification = (notification: Notification) => {
+    const { title } = notification.request.content;
+    console.warn(title);
+  };
+
+  const requestNotificationPermissions = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    setNotificationPermissions(status);
+    return status;
+  };
 
   const scheduleNotification = (seconds: number, bank: any, discount: any, business: any) => {
     const schedulingOptions = {

@@ -1,4 +1,4 @@
-rootProject.name = 'deals-here-app'
+rootProject.name = 'Deals Here'
 
 dependencyResolutionManagement {
   versionCatalogs {
