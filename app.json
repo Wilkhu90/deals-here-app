@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "deals-here-app",
-    "slug": "deals-here-app",
+    "name": "Deals Here",
+    "slug": "Deals Here",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
