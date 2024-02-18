@@ -18,15 +18,38 @@ type BankDiscount = {
 }
 const LOCATION_TASK_NAME = 'background-location-task';
 
+/* PUBLISHER */
+const LocationService = () => {
+  let subscribers: any[] = []
+  let location = {
+    latitude: 0,
+    longitude: 0
+  }
+
+  return {
+    subscribe: (sub: any) => subscribers.push(sub),
+    setLocation: (coords: any) => {
+      location = coords
+      subscribers.forEach((sub) => sub(location))
+    },
+    unsubscribe: (sub: any) => {
+      subscribers = subscribers.filter((_sub) => _sub !== sub)
+    }
+  }
+}
+
+export const locationService = LocationService();
+
 TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
     if (error) {
       // Error occurred - check `error.message` for more details.
       return;
     }
     if (data) {
-      const { locations } = data;
-      console.log("Task -> ", locations[0])
-      storeData('location', locations[0]);
+      const { latitude, longitude } = data.locations[0].coords
+      console.log("Task -> ", data.locations[0])
+      // storeData('location', locations[0]);
+      locationService.setLocation({ latitude, longitude })
     }
 });
 
@@ -42,8 +65,9 @@ const getLocationPermissions = async() => {
       if(backPerm.status === 'granted' ) {
         console.log("Here123")
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.Balanced,
-          deferredUpdatesDistance: 10
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 10,
+          timeInterval: 5000
         });
       }
     } catch(error) {
@@ -54,14 +78,12 @@ const getLocationPermissions = async() => {
 
 function Home() {
   const [dealList, setDealList] = useState<BankDiscount[]>([]);
-  const [location, setLocation] = useState<any>(null);
   const [address, setAddress] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState<any>(false);
   const [discountTypeList, setDiscountTypeList] = useState<any>([] as any[]);
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
-  const [startIntervalTask, setStartIntervalTask] = useState<any>(false);
   const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
     PermissionStatus.UNDETERMINED,
   );
@@ -78,25 +100,25 @@ function Home() {
       let dealListNew = await getStoredData('customer-data');
 
       // if(!dealListNew) {
-        // dealListNew = [{
-        //     name: "Chase",
-        //     business: "Red Pepper Taqueria",
-        //     type: "restaurant",
-        //     discount: 10,
-        //   },
-        //   {
-        //     name: "Citi",
-        //     business: "Campus Crossings",
-        //     type: "apartments",
-        //     discount: 10,
-        //   },
-        //   {
-        //     name: "Citi",
-        //     business: "any",
-        //     type: "school",
-        //     discount: 15,
-        //   },
-        // ]
+        dealListNew = [{
+            name: "Chase",
+            business: "Red Pepper Taqueria",
+            type: "restaurant",
+            discount: 10,
+          },
+          {
+            name: "Citi",
+            business: "Campus Crossings",
+            type: "apartments",
+            discount: 10,
+          },
+          {
+            name: "Citi",
+            business: "any",
+            type: "school",
+            discount: 15,
+          },
+        ]
       // }
 
       if(dealListNew) {
@@ -104,49 +126,48 @@ function Home() {
       }
       await getLocationPermissions();
       await requestNotificationPermissions();
-      await getLocation();
     })();
   }, []);
 
-  useEffect(() => {
-    if(startIntervalTask) {
-      console.log("Starting interval task");
-      const task = setInterval(() => {
-        getStoredData('location').then((currentLocation) => {
-          console.log("Executing interval task");
-          // console.log("Current Location -> ", currentLocation);
-          // console.log("Location -> ", location);
-          if(location === null && currentLocation && currentLocation.coords) {
-            setLocation((previousLocation: any) => {
-              // console.log("1", previousLocation)
-              if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
-                // console.log("10", previousLocation)
-                return currentLocation;
-              } else if(previousLocation === undefined) {
-                // console.log("11", previousLocation)
-                return currentLocation;
-              }
-              return previousLocation;
-            });
-          }
-          else if(currentLocation && currentLocation.coords && location && location.coords && location.coords.longitude != currentLocation.coords.longitude && location.coords.latitude != currentLocation.coords.latitude) {
-            setLocation((previousLocation: any) => {
-              // console.log("2", previousLocation)
-              if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
-                // console.log("220", previousLocation)
-                return currentLocation;
-              } else if(previousLocation === undefined) {
-                // console.log("22", previousLocation)
-                return currentLocation;
-              }
-              return previousLocation;
-            });
-          }
-        })
-      } , 5000);
-      return () => clearInterval(task);
-    }
-  }, [startIntervalTask]);
+  // useEffect(() => {
+  //   if(startIntervalTask) {
+  //     console.log("Starting interval task");
+  //     const task = setInterval(() => {
+  //       getStoredData('location').then((currentLocation) => {
+  //         console.log("Executing interval task");
+  //         // console.log("Current Location -> ", currentLocation);
+  //         // console.log("Location -> ", location);
+  //         if(location === null && currentLocation && currentLocation.coords) {
+  //           setLocation((previousLocation: any) => {
+  //             // console.log("1", previousLocation)
+  //             if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
+  //               // console.log("10", previousLocation)
+  //               return currentLocation;
+  //             } else if(previousLocation === undefined) {
+  //               // console.log("11", previousLocation)
+  //               return currentLocation;
+  //             }
+  //             return previousLocation;
+  //           });
+  //         }
+  //         else if(currentLocation && currentLocation.coords && location && location.coords && location.coords.longitude != currentLocation.coords.longitude && location.coords.latitude != currentLocation.coords.latitude) {
+  //           setLocation((previousLocation: any) => {
+  //             // console.log("2", previousLocation)
+  //             if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
+  //               // console.log("220", previousLocation)
+  //               return currentLocation;
+  //             } else if(previousLocation === undefined) {
+  //               // console.log("22", previousLocation)
+  //               return currentLocation;
+  //             }
+  //             return previousLocation;
+  //           });
+  //         }
+  //       })
+  //     } , 5000);
+  //     return () => clearInterval(task);
+  //   }
+  // }, [startIntervalTask]);
 
   useEffect(() => {
     if (notificationPermissions !== PermissionStatus.GRANTED) {
@@ -157,42 +178,58 @@ function Home() {
   }, [notificationPermissions]);
 
   useEffect(() => {
-    if(location && location.coords) {
-      let lat = location.coords.latitude;
-      let long = location.coords.longitude;
-      console.log("1");
-      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + long + "&zoom=18&addressdetails=1")
-        .then((response) => response.json())
-        .then((address) => {
-          console.log(address)
-          setAddress(address);
-          // Decision Generator
-          let applicableDeals = dealList.filter((deal: any) => {
-            if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === "any") {
-              return deal;
-            } else if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === address.name.toLowerCase()) {
-              return deal;
-            }
-          }).sort((a: any, b: any) => {
-            if(a.discount > b.discount) {
-              return -1;
-            }
-            if(a.discount < b.discount) {
-              return 1;
-            }
-            return 0;
-          });
-          console.log("2 -> ",address.name);
-          console.log("3 -> ",applicableDeals);
-          console.log("4 -> ",dealsHere.current.name)
-          if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== address.name) {
-            console.log("55 -> ", applicableDeals[0])
-            scheduleNotification(1, applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
-          }
-          dealsHere.current = address;
-        })
+    // Location.getCurrentPositionAsync({}).then((location: any) => {
+    //   console.log("In useEffect -> ", location)
+    //   let latitude = location.coords.latitude;
+    //   let longitude = location.coords.longitude;
+    //   dealFinder({ latitude, longitude });
+    // });
+    if(dealList.length > 0) {
+      getLocation();
+      locationService.subscribe(onLocationUpdate);
     }
-  }, [location, dealList]);
+    return () => locationService.unsubscribe(onLocationUpdate);
+  }, [dealList]);
+
+  const onLocationUpdate = ({ latitude, longitude }: any) => {
+    console.log("Subscriber => ", latitude, longitude);
+    dealFinder({ latitude, longitude });
+  }
+
+  const dealFinder = ({ latitude, longitude }: any) => {
+    fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
+      .then((response) => response.json())
+      .then((address) => {
+        console.log(address)
+        setAddress(address);
+        // Decision Generator
+        let applicableDeals = dealList.filter((deal: any) => {
+          if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === "any") {
+            return deal;
+          } else if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === address.name.toLowerCase()) {
+            return deal;
+          }
+        }).sort((a: any, b: any) => {
+          if(a.discount > b.discount) {
+            return -1;
+          }
+          if(a.discount < b.discount) {
+            return 1;
+          }
+          return 0;
+        });
+        console.log("2 -> ",address.name);
+        console.log("3 -> ",applicableDeals);
+        console.log("4 -> ",dealsHere.current.name)
+        if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== address.name) {
+          console.log("55 -> ", applicableDeals[0])
+          scheduleNotification(1, applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
+        }
+        dealsHere.current = address;
+    }).catch((error) => {
+      console.log("Too Fast", error);
+    })
+  }
 
   const handleNotification = (notification: Notification) => {
     const { title } = notification.request.content;
@@ -223,13 +260,12 @@ function Home() {
 
   const getLocation = async() => {
     let currentLocation = await Location.getCurrentPositionAsync({});
-    setLocation(currentLocation);
-    let lat = currentLocation.coords.latitude;
-    let long = currentLocation.coords.longitude;
-    const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + long + "&zoom=18&addressdetails=1");
+    let latitude = currentLocation.coords.latitude;
+    let longitude = currentLocation.coords.longitude;
+    const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1");
     const data = await response.json();
     setAddress(data);
-    setStartIntervalTask(true);
+    dealFinder({ latitude, longitude });
   }
 
   const handleChange = (type: any, text: any) => {
