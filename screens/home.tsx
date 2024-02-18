@@ -84,6 +84,7 @@ function Home() {
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
     PermissionStatus.UNDETERMINED,
   );
@@ -138,7 +139,8 @@ function Home() {
   }, [notificationPermissions]);
 
   useEffect(() => {
-    if(dealList.length > 0) {
+    if(dealList.length > 0 && !isSubscribed) {
+      setIsSubscribed(true);
       getLocation();
       locationService.subscribe(onLocationUpdate);
     }
