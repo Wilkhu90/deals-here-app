@@ -66,8 +66,8 @@ const getLocationPermissions = async() => {
         console.log("Here123")
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
           accuracy: Location.Accuracy.High,
-          distanceInterval: 10,
-          timeInterval: 5000
+          // distanceInterval: 10,
+          // timeInterval: 5000
         });
       }
     } catch(error) {
@@ -144,7 +144,7 @@ function Home() {
       getLocation();
       locationService.subscribe(onLocationUpdate);
     }
-    return () => locationService.unsubscribe(onLocationUpdate);
+    // return () => locationService.unsubscribe(onLocationUpdate);
   }, [dealList]);
 
   const onLocationUpdate = ({ latitude, longitude }: any) => {
