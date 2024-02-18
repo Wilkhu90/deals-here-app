@@ -100,25 +100,25 @@ function Home() {
       let dealListNew = await getStoredData('customer-data');
 
       // if(!dealListNew) {
-        dealListNew = [{
-            name: "Chase",
-            business: "Red Pepper Taqueria",
-            type: "restaurant",
-            discount: 10,
-          },
-          {
-            name: "Citi",
-            business: "Campus Crossings",
-            type: "apartments",
-            discount: 10,
-          },
-          {
-            name: "Citi",
-            business: "any",
-            type: "school",
-            discount: 15,
-          },
-        ]
+        // dealListNew = [{
+        //     name: "Chase",
+        //     business: "Red Pepper Taqueria",
+        //     type: "restaurant",
+        //     discount: 10,
+        //   },
+        //   {
+        //     name: "Citi",
+        //     business: "Campus Crossings",
+        //     type: "apartments",
+        //     discount: 10,
+        //   },
+        //   {
+        //     name: "Citi",
+        //     business: "any",
+        //     type: "school",
+        //     discount: 15,
+        //   },
+        // ]
       // }
 
       if(dealListNew) {
@@ -129,46 +129,6 @@ function Home() {
     })();
   }, []);
 
-  // useEffect(() => {
-  //   if(startIntervalTask) {
-  //     console.log("Starting interval task");
-  //     const task = setInterval(() => {
-  //       getStoredData('location').then((currentLocation) => {
-  //         console.log("Executing interval task");
-  //         // console.log("Current Location -> ", currentLocation);
-  //         // console.log("Location -> ", location);
-  //         if(location === null && currentLocation && currentLocation.coords) {
-  //           setLocation((previousLocation: any) => {
-  //             // console.log("1", previousLocation)
-  //             if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
-  //               // console.log("10", previousLocation)
-  //               return currentLocation;
-  //             } else if(previousLocation === undefined) {
-  //               // console.log("11", previousLocation)
-  //               return currentLocation;
-  //             }
-  //             return previousLocation;
-  //           });
-  //         }
-  //         else if(currentLocation && currentLocation.coords && location && location.coords && location.coords.longitude != currentLocation.coords.longitude && location.coords.latitude != currentLocation.coords.latitude) {
-  //           setLocation((previousLocation: any) => {
-  //             // console.log("2", previousLocation)
-  //             if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
-  //               // console.log("220", previousLocation)
-  //               return currentLocation;
-  //             } else if(previousLocation === undefined) {
-  //               // console.log("22", previousLocation)
-  //               return currentLocation;
-  //             }
-  //             return previousLocation;
-  //           });
-  //         }
-  //       })
-  //     } , 5000);
-  //     return () => clearInterval(task);
-  //   }
-  // }, [startIntervalTask]);
-
   useEffect(() => {
     if (notificationPermissions !== PermissionStatus.GRANTED) {
       return;
@@ -178,12 +138,6 @@ function Home() {
   }, [notificationPermissions]);
 
   useEffect(() => {
-    // Location.getCurrentPositionAsync({}).then((location: any) => {
-    //   console.log("In useEffect -> ", location)
-    //   let latitude = location.coords.latitude;
-    //   let longitude = location.coords.longitude;
-    //   dealFinder({ latitude, longitude });
-    // });
     if(dealList.length > 0) {
       getLocation();
       locationService.subscribe(onLocationUpdate);
