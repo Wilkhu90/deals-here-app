@@ -77,19 +77,19 @@ function Home() {
       let dealListNew = await getStoredData('customer-data');
 
       // if(!dealListNew) {
-        dealListNew = [{
-            name: "Chase",
-            business: "Red Pepper Taqueria",
-            type: "restaurant",
-            discount: 10,
-          },
-          {
-            name: "Citi",
-            business: "Campus Crossings",
-            type: "apartments",
-            discount: 10,
-          },
-        ]
+        // dealListNew = [{
+        //     name: "Chase",
+        //     business: "Red Pepper Taqueria",
+        //     type: "restaurant",
+        //     discount: 10,
+        //   },
+        //   {
+        //     name: "Citi",
+        //     business: "Campus Crossings",
+        //     type: "apartments",
+        //     discount: 10,
+        //   },
+        // ]
       // }
 
       if(dealListNew) {
