@@ -61,12 +61,13 @@ function Home() {
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
+  const [startIntervalTask, setStartIntervalTask] = useState<any>(false);
   const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
     PermissionStatus.UNDETERMINED,
   );
 
   //Red Pepper Taqueria - Coordinates 33.81693, -84.33439
-  //Apartment - Coordinates 33.8021, -84.33828
+  //Apartment           - Coordinates 33.8021, -84.33828
   useEffect(() => {
     console.log("Loaded");
     (async() => {
@@ -77,19 +78,25 @@ function Home() {
       let dealListNew = await getStoredData('customer-data');
 
       // if(!dealListNew) {
-        // dealListNew = [{
-        //     name: "Chase",
-        //     business: "Red Pepper Taqueria",
-        //     type: "restaurant",
-        //     discount: 10,
-        //   },
-        //   {
-        //     name: "Citi",
-        //     business: "Campus Crossings",
-        //     type: "apartments",
-        //     discount: 10,
-        //   },
-        // ]
+        dealListNew = [{
+            name: "Chase",
+            business: "Red Pepper Taqueria",
+            type: "restaurant",
+            discount: 10,
+          },
+          {
+            name: "Citi",
+            business: "Campus Crossings",
+            type: "apartments",
+            discount: 10,
+          },
+          {
+            name: "Citi",
+            business: "any",
+            type: "school",
+            discount: 15,
+          },
+        ]
       // }
 
       if(dealListNew) {
@@ -98,15 +105,48 @@ function Home() {
       await getLocationPermissions();
       await requestNotificationPermissions();
       await getLocation();
-      setInterval(async() => {
-        const currentLocation = await getStoredData('location');
-        console.log("Current Location -> ", currentLocation);
-        if(currentLocation && currentLocation.coords) {
-          setLocation(currentLocation);
-        }
-      }, 3000);
     })();
   }, []);
+
+  useEffect(() => {
+    if(startIntervalTask) {
+      console.log("Starting interval task");
+      const task = setInterval(() => {
+        getStoredData('location').then((currentLocation) => {
+          console.log("Executing interval task");
+          // console.log("Current Location -> ", currentLocation);
+          // console.log("Location -> ", location);
+          if(location === null && currentLocation && currentLocation.coords) {
+            setLocation((previousLocation: any) => {
+              // console.log("1", previousLocation)
+              if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
+                // console.log("10", previousLocation)
+                return currentLocation;
+              } else if(previousLocation === undefined) {
+                // console.log("11", previousLocation)
+                return currentLocation;
+              }
+              return previousLocation;
+            });
+          }
+          else if(currentLocation && currentLocation.coords && location && location.coords && location.coords.longitude != currentLocation.coords.longitude && location.coords.latitude != currentLocation.coords.latitude) {
+            setLocation((previousLocation: any) => {
+              // console.log("2", previousLocation)
+              if(previousLocation && previousLocation.coords && previousLocation.coords.longitude != currentLocation.coords.longitude && previousLocation.coords.latitude != currentLocation.coords.latitude) {
+                // console.log("220", previousLocation)
+                return currentLocation;
+              } else if(previousLocation === undefined) {
+                // console.log("22", previousLocation)
+                return currentLocation;
+              }
+              return previousLocation;
+            });
+          }
+        })
+      } , 5000);
+      return () => clearInterval(task);
+    }
+  }, [startIntervalTask]);
 
   useEffect(() => {
     if (notificationPermissions !== PermissionStatus.GRANTED) {
@@ -121,36 +161,36 @@ function Home() {
       let lat = location.coords.latitude;
       let long = location.coords.longitude;
       console.log("1");
-      (async() => {
-        const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + long + "&zoom=18&addressdetails=1");
-        const address = await response.json();
-        setAddress(address);
-        // Decision Generator
-        let applicableDeals = dealList.filter((deal: any) => {
-          if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === "any") {
-            return deal;
-          } else if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === address.name.toLowerCase()) {
-            return deal;
+      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + long + "&zoom=18&addressdetails=1")
+        .then((response) => response.json())
+        .then((address) => {
+          console.log(address)
+          setAddress(address);
+          // Decision Generator
+          let applicableDeals = dealList.filter((deal: any) => {
+            if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === "any") {
+              return deal;
+            } else if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === address.name.toLowerCase()) {
+              return deal;
+            }
+          }).sort((a: any, b: any) => {
+            if(a.discount > b.discount) {
+              return -1;
+            }
+            if(a.discount < b.discount) {
+              return 1;
+            }
+            return 0;
+          });
+          console.log("2 -> ",address.name);
+          console.log("3 -> ",applicableDeals);
+          console.log("4 -> ",dealsHere.current.name)
+          if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== address.name) {
+            console.log("55 -> ", applicableDeals[0])
+            scheduleNotification(1, applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
           }
-        }).sort((a: any, b: any) => {
-          if(a.discount > b.discount) {
-            return -1;
-          }
-          if(a.discount < b.discount) {
-            return 1;
-          }
-          return 0;
-        });
-        storeData('address', address);
-        console.log("2 -> ",address.name);
-        console.log("3 -> ",applicableDeals);
-        console.log("4 -> ",dealsHere.current.name)
-        if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== address.name) {
-          console.log("55 -> ", applicableDeals[0])
-          scheduleNotification(1, applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
-        }
-        dealsHere.current = address;
-      })();
+          dealsHere.current = address;
+        })
     }
   }, [location, dealList]);
 
@@ -189,6 +229,7 @@ function Home() {
     const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + long + "&zoom=18&addressdetails=1");
     const data = await response.json();
     setAddress(data);
+    setStartIntervalTask(true);
   }
 
   const handleChange = (type: any, text: any) => {
