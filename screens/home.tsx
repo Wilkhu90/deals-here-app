@@ -4,11 +4,10 @@ import { storeData, getStoredData } from '../components/storage';
 import SelectDropdown from 'react-native-select-dropdown';
 import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import * as Notifications from 'expo-notifications';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { Notification } from 'expo-notifications';
-import { PermissionStatus } from 'expo-modules-core';
+import notifee, { NotificationSettings, AuthorizationStatus, EventType } from '@notifee/react-native';
+
 
 type BankDiscount = {
   name: string,
@@ -76,6 +75,11 @@ const getLocationPermissions = async() => {
   }
 }
 
+notifee.onBackgroundEvent(async ({ type, detail }: any) => {
+  const { notification, pressAction } = detail;
+  console.warn(notification.title);
+});
+
 function Home() {
   const [dealList, setDealList] = useState<BankDiscount[]>([]);
   const [address, setAddress] = useState<any>(null);
@@ -86,9 +90,7 @@ function Home() {
   const dealsHere = useRef({ name: ""});
   const timeCoords = useRef(0);
   const [dealAchieve, setDealAchieve] = useState<any>({} as any);
-  const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
-    PermissionStatus.UNDETERMINED,
-  );
+  const [notificationPermission, setNotificationPermission] = useState<NotificationSettings>();
 
   //Red Pepper Taqueria - Coordinates 33.81693, -84.33439
   //Apartment           - Coordinates 33.8021, -84.33828
@@ -127,28 +129,23 @@ function Home() {
         setDealList([ ...dealListNew ]);
       }
       await getLocationPermissions();
-      await requestNotificationPermissions();
+      const settings = await notifee.requestPermission();
+      console.log(settings)
+      setNotificationPermission(settings);
     })();
   }, []);
 
   useEffect(() => {
-    if (notificationPermissions !== PermissionStatus.GRANTED) {
-      return;
-    }
-    const listener = Notifications.addNotificationReceivedListener(handleNotification);
-    return () => listener.remove();
-  }, [notificationPermissions]);
-
-  useEffect(() => {
-    if(dealList.length > 0 && notificationPermissions == PermissionStatus.GRANTED) {
+    if(dealList.length > 0 && notificationPermission && notificationPermission?.ios.authorizationStatus === AuthorizationStatus.AUTHORIZED) {
       locationService.subscribe(onLocationUpdate);
     }
     return () => locationService.unsubscribe(onLocationUpdate);
-  }, [notificationPermissions, dealList]);
+  }, [notificationPermission, dealList]);
 
   const onLocationUpdate = ({ latitude, longitude, speed, timestamp }: any) => {
     console.log("Subscriber => ", latitude, longitude, speed, timestamp);
-    if(notificationPermissions == PermissionStatus.GRANTED) {
+    console.log(notificationPermission && notificationPermission?.ios.authorizationStatus);
+    if(notificationPermission && notificationPermission?.ios.authorizationStatus === AuthorizationStatus.AUTHORIZED) {
       dealFinder({ latitude, longitude, speed, timestamp });
     } else {
       console.log("No Boi");
@@ -198,28 +195,24 @@ function Home() {
     
   }
 
-  const handleNotification = (notification: Notification) => {
-    const { title } = notification.request.content;
-    console.warn(title);
-  };
-
-  const requestNotificationPermissions = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    console.log(status)
-    setNotificationPermissions(status);
-    return status;
-  };
-
   const scheduleNotification = async(bank: any, discount: any, business: any) => {
-    const schedulingOptions = {
-      content: {
-        title: 'Deals Here!',
-        body: 'Use '+bank+' card to get '+discount+'% discount at '+business,
-        sound: true,
+    const channelId = await notifee.createChannel({
+      id: 'default',
+      name: 'Default Channel',
+    });
+
+    await notifee.displayNotification({
+      title: 'Deals Here!',
+      body: 'Use '+bank+' card to get '+discount+'% discount at '+business,
+      android: {
+        channelId,
+        smallIcon: 'ic_launcher', // optional, defaults to 'ic_launcher'.
+        // pressAction is needed if you want the notification to open the app when pressed
+        pressAction: {
+          id: 'default',
+        },
       },
-      trigger: null
-    };
-    Notifications.scheduleNotificationAsync(schedulingOptions);
+    });
   };
 
   const handleChange = (type: any, text: any) => {
@@ -425,6 +418,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   }
 });
-
 
 export default Home;
