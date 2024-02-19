@@ -6,7 +6,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import notifee, { NotificationSettings, AuthorizationStatus, EventType } from '@notifee/react-native';
+import notifee, { NotificationSettings, AuthorizationStatus } from '@notifee/react-native';
 
 
 type BankDiscount = {
@@ -89,7 +89,6 @@ function Home() {
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
   const timeCoords = useRef(0);
-  const [dealAchieve, setDealAchieve] = useState<any>({} as any);
   const [notificationPermission, setNotificationPermission] = useState<NotificationSettings>();
 
   //Red Pepper Taqueria - Coordinates 33.81693, -84.33439
@@ -149,7 +148,6 @@ function Home() {
       dealFinder({ latitude, longitude, speed, timestamp });
     } else {
       console.log("No Boi");
-      setDealAchieve({business: "No Business", discount: 0});
     }
   }
 
@@ -184,8 +182,7 @@ function Home() {
         // console.log("4 -> ",dealsHere.current.name)
         if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== currentAddress.name) {
           console.log("55 -> ", applicableDeals[0]);
-          setDealAchieve(applicableDeals[0]);
-          scheduleNotification(applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
+          scheduleNotification(applicableDeals[0].name, applicableDeals[0].discount, currentAddress.name);
         }
         dealsHere.current = currentAddress;
       }).catch((error) => {
@@ -204,6 +201,9 @@ function Home() {
     await notifee.displayNotification({
       title: 'Deals Here!',
       body: 'Use '+bank+' card to get '+discount+'% discount at '+business,
+      ios: {
+        sound: 'default',
+      },
       android: {
         channelId,
         smallIcon: 'ic_launcher', // optional, defaults to 'ic_launcher'.
@@ -325,7 +325,6 @@ function Home() {
         </View>
         <Text>Current Address Name: {address ? address.name : null}</Text>
         <Text>Current Address Type: {address ? address.type : null}</Text>
-        <Text>Current Deal Achieved: {dealAchieve && dealAchieve.business ? dealAchieve.business + " with discount of " + dealAchieve.discount : null}</Text>
         <StatusBar style="auto" />
       </View>
     </TouchableWithoutFeedback>
