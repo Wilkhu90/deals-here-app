@@ -47,9 +47,8 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
     }
     if (data) {
       const { latitude, longitude } = data.locations[0].coords
-      console.log("Task -> ", data.locations[0])
-      // storeData('location', locations[0]);
-      locationService.setLocation({ latitude, longitude })
+      console.log("Task -> ", data.locations[0]);
+      locationService.setLocation({ latitude, longitude });
     }
 });
 
@@ -65,9 +64,7 @@ const getLocationPermissions = async() => {
       if(backPerm.status === 'granted' ) {
         console.log("Here123")
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 5,
-          timeInterval: 5000
+          accuracy: Location.Accuracy.Balanced
         });
       }
     } catch(error) {
@@ -84,7 +81,6 @@ function Home() {
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
     PermissionStatus.UNDETERMINED,
   );
@@ -139,12 +135,10 @@ function Home() {
   }, [notificationPermissions]);
 
   useEffect(() => {
-    if(dealList.length > 0 && !isSubscribed) {
-      setIsSubscribed(true);
-      getLocation();
+    if(dealList.length > 0) {
       locationService.subscribe(onLocationUpdate);
     }
-    // return () => locationService.unsubscribe(onLocationUpdate);
+    return () => locationService.unsubscribe(onLocationUpdate);
   }, [dealList]);
 
   const onLocationUpdate = ({ latitude, longitude }: any) => {
@@ -155,14 +149,13 @@ function Home() {
   const dealFinder = ({ latitude, longitude }: any) => {
     fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
       .then((response) => response.json())
-      .then((address) => {
-        console.log(address)
-        setAddress(address);
+      .then((currentAddress) => {
+        setAddress(currentAddress);
         // Decision Generator
         let applicableDeals = dealList.filter((deal: any) => {
-          if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === "any") {
+          if(deal.type.toLowerCase() === currentAddress.type.toLowerCase() && deal.business.toLowerCase() === "any") {
             return deal;
-          } else if(deal.type.toLowerCase() === address.type.toLowerCase() && deal.business.toLowerCase() === address.name.toLowerCase()) {
+          } else if(deal.type.toLowerCase() === currentAddress.type.toLowerCase() && deal.business.toLowerCase() === currentAddress.name.toLowerCase()) {
             return deal;
           }
         }).sort((a: any, b: any) => {
@@ -174,16 +167,17 @@ function Home() {
           }
           return 0;
         });
-        console.log("2 -> ",address.name);
-        console.log("3 -> ",applicableDeals);
-        console.log("4 -> ",dealsHere.current.name)
-        if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== address.name) {
+        // console.log(dealList);
+        // console.log("2 -> ",address.name);
+        // console.log("3 -> ",applicableDeals);
+        // console.log("4 -> ",dealsHere.current.name)
+        if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== currentAddress.name) {
           console.log("55 -> ", applicableDeals[0])
-          scheduleNotification(1, applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
+          scheduleNotification(applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
         }
-        dealsHere.current = address;
+        dealsHere.current = currentAddress;
     }).catch((error) => {
-      console.log("Too Fast", error);
+      console.log("Too Fast or some shit", error);
     })
   }
 
@@ -198,31 +192,17 @@ function Home() {
     return status;
   };
 
-  const scheduleNotification = (seconds: number, bank: any, discount: any, business: any) => {
+  const scheduleNotification = async(bank: any, discount: any, business: any) => {
     const schedulingOptions = {
       content: {
         title: 'Deals Here!',
         body: 'Use '+bank+' card to get '+discount+'% discount at '+business,
         sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-        color: 'blue',
       },
-      trigger: {
-        seconds: seconds,
-      },
+      trigger: null
     };
-    Notifications.scheduleNotificationAsync(schedulingOptions);
+    await Notifications.scheduleNotificationAsync(schedulingOptions);
   };
-
-  const getLocation = async() => {
-    let currentLocation = await Location.getCurrentPositionAsync({});
-    let latitude = currentLocation.coords.latitude;
-    let longitude = currentLocation.coords.longitude;
-    const response = await fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1");
-    const data = await response.json();
-    setAddress(data);
-    dealFinder({ latitude, longitude });
-  }
 
   const handleChange = (type: any, text: any) => {
     currentDeal[type] = text;
@@ -332,8 +312,8 @@ function Home() {
         <View style={styles.buttonContainer}>
           <Button title='Add Deals Here' color={"#000"} onPress={() => setModalVisible(true)}/>
         </View>
-
-        <Text>Current Address: {address ? address.name : null}</Text>
+        <Text>Current Address Name: {address ? address.name : null}</Text>
+        <Text>Current Address Type: {address ? address.type : null}</Text>
         <StatusBar style="auto" />
       </View>
     </TouchableWithoutFeedback>
