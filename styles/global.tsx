@@ -12,6 +12,10 @@ export const globalStyles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
-  },
+    backgroundColor: '#967bb6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 50,
+    paddingBottom: 50,
+  }
 });

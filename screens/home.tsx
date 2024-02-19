@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Button, StyleSheet, Text, View, FlatList, Modal, Pressable, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { storeData, getStoredData } from '../components/storage';
 import SelectDropdown from 'react-native-select-dropdown';
@@ -7,7 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import notifee, { NotificationSettings, AuthorizationStatus } from '@notifee/react-native';
-
+import { DealsHereContext } from '../components/context';
+import { globalStyles } from '../styles/global';
 
 type BankDiscount = {
   name: string,
@@ -81,7 +82,8 @@ notifee.onBackgroundEvent(async ({ type, detail }: any) => {
 });
 
 function Home() {
-  const [dealList, setDealList] = useState<BankDiscount[]>([]);
+  // const [dealList, setDealList] = useState<BankDiscount[]>([]);
+  const { dealList, setDealList, setLocation } = useContext(DealsHereContext);
   const [address, setAddress] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState<any>(false);
   const [discountTypeList, setDiscountTypeList] = useState<any>([] as any[]);
@@ -156,6 +158,7 @@ function Home() {
     console.log("timestamp -> ", timestamp);
     if(timestamp != timeCoords.current) {
       timeCoords.current = timestamp;
+      setLocation({ latitude, longitude, speed, timestamp });
       fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
       .then((response) => response.json())
       .then((currentAddress) => {
@@ -238,7 +241,7 @@ function Home() {
 
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={styles.container}>
+      <View style={globalStyles.container}>
         <FlatList 
           data={dealList}
           renderItem={({item, index}) => (
@@ -332,14 +335,6 @@ function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#967bb6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 50,
-    paddingBottom: 50,
-  },
   buttonContainer: {
     backgroundColor: "#fdefb2",
     borderRadius: 10,

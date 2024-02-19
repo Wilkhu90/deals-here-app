@@ -1,11 +1,14 @@
 import RootDrawerNavigator from './routes/drawer';
 import { NavigationContainer } from '@react-navigation/native';
+import { DealsHereContextProvider } from './components/context';
 
 export default function App() {
 
   return (
-    <NavigationContainer>
-      <RootDrawerNavigator />
-    </NavigationContainer>
-  );
+    <DealsHereContextProvider>
+      <NavigationContainer>
+        <RootDrawerNavigator />
+      </NavigationContainer>
+    </DealsHereContextProvider>
+  )
 }
