@@ -23,7 +23,9 @@ const LocationService = () => {
   let subscribers: any[] = []
   let location = {
     latitude: 0,
-    longitude: 0
+    longitude: 0,
+    speed: 0,
+    timestamp: 0,
   }
 
   return {
@@ -46,9 +48,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, ({ data, error }: any) => {
       return;
     }
     if (data) {
-      const { latitude, longitude } = data.locations[0].coords
+      const { latitude, longitude, speed } = data.locations[0].coords
+      const { timestamp } = data.locations[0]
       console.log("Task -> ", data.locations[0]);
-      locationService.setLocation({ latitude, longitude });
+      locationService.setLocation({ latitude, longitude, speed, timestamp });
     }
 });
 
@@ -81,6 +84,8 @@ function Home() {
   const [bankList, setBankList] = useState<any>([] as any[]);
   const [currentDeal, setCurrentDeal] = useState<any>({} as any);
   const dealsHere = useRef({ name: ""});
+  const timeCoords = useRef(0);
+  const [dealAchieve, setDealAchieve] = useState<any>({} as any);
   const [notificationPermissions, setNotificationPermissions] = useState<PermissionStatus>(
     PermissionStatus.UNDETERMINED,
   );
@@ -135,19 +140,28 @@ function Home() {
   }, [notificationPermissions]);
 
   useEffect(() => {
-    if(dealList.length > 0) {
+    if(dealList.length > 0 && notificationPermissions == PermissionStatus.GRANTED) {
       locationService.subscribe(onLocationUpdate);
     }
     return () => locationService.unsubscribe(onLocationUpdate);
-  }, [dealList]);
+  }, [notificationPermissions, dealList]);
 
-  const onLocationUpdate = ({ latitude, longitude }: any) => {
-    console.log("Subscriber => ", latitude, longitude);
-    dealFinder({ latitude, longitude });
+  const onLocationUpdate = ({ latitude, longitude, speed, timestamp }: any) => {
+    console.log("Subscriber => ", latitude, longitude, speed, timestamp);
+    if(notificationPermissions == PermissionStatus.GRANTED) {
+      dealFinder({ latitude, longitude, speed, timestamp });
+    } else {
+      console.log("No Boi");
+      setDealAchieve({business: "No Business", discount: 0});
+    }
   }
 
-  const dealFinder = ({ latitude, longitude }: any) => {
-    fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
+  const dealFinder = ({ latitude, longitude, speed, timestamp }: any) => {
+    console.log("speed -> ", speed);
+    console.log("timestamp -> ", timestamp);
+    if(timestamp != timeCoords.current) {
+      timeCoords.current = timestamp;
+      fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + latitude + "&lon=" + longitude + "&zoom=18&addressdetails=1")
       .then((response) => response.json())
       .then((currentAddress) => {
         setAddress(currentAddress);
@@ -172,13 +186,16 @@ function Home() {
         // console.log("3 -> ",applicableDeals);
         // console.log("4 -> ",dealsHere.current.name)
         if(applicableDeals && applicableDeals.length > 0 && dealsHere.current.name !== currentAddress.name) {
-          console.log("55 -> ", applicableDeals[0])
+          console.log("55 -> ", applicableDeals[0]);
+          setDealAchieve(applicableDeals[0]);
           scheduleNotification(applicableDeals[0].name, applicableDeals[0].discount, applicableDeals[0].business);
         }
         dealsHere.current = currentAddress;
-    }).catch((error) => {
-      console.log("Too Fast or some shit", error);
-    })
+      }).catch((error) => {
+        console.log("Too Fast or some shit", error);
+      });
+    }
+    
   }
 
   const handleNotification = (notification: Notification) => {
@@ -188,6 +205,7 @@ function Home() {
 
   const requestNotificationPermissions = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
+    console.log(status)
     setNotificationPermissions(status);
     return status;
   };
@@ -201,7 +219,7 @@ function Home() {
       },
       trigger: null
     };
-    await Notifications.scheduleNotificationAsync(schedulingOptions);
+    Notifications.scheduleNotificationAsync(schedulingOptions);
   };
 
   const handleChange = (type: any, text: any) => {
@@ -314,6 +332,7 @@ function Home() {
         </View>
         <Text>Current Address Name: {address ? address.name : null}</Text>
         <Text>Current Address Type: {address ? address.type : null}</Text>
+        <Text>Current Deal Achieved: {dealAchieve && dealAchieve.business ? dealAchieve.business + " with discount of " + dealAchieve.discount : null}</Text>
         <StatusBar style="auto" />
       </View>
     </TouchableWithoutFeedback>
