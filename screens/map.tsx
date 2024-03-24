@@ -7,8 +7,6 @@ import MapView, { Marker } from 'react-native-maps';
 export default function Map() {
   const { dealList, location } = useContext(DealsHereContext);
 
-
-
   return (
     <View style={globalStyles.container}>
       <MapView style={styles.map} 

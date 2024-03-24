@@ -9,6 +9,7 @@ import * as TaskManager from 'expo-task-manager';
 import notifee, { NotificationSettings, AuthorizationStatus } from '@notifee/react-native';
 import { DealsHereContext } from '../components/context';
 import { globalStyles } from '../styles/global';
+import Card from '../components/card';
 
 type BankDiscount = {
   name: string,
@@ -82,7 +83,6 @@ notifee.onBackgroundEvent(async ({ type, detail }: any) => {
 });
 
 function Home() {
-  // const [dealList, setDealList] = useState<BankDiscount[]>([]);
   const { dealList, setDealList, setLocation } = useContext(DealsHereContext);
   const [address, setAddress] = useState<any>(null);
   const [modalVisible, setModalVisible] = useState<any>(false);
@@ -169,6 +169,8 @@ function Home() {
             return deal;
           } else if(deal.type.toLowerCase() === currentAddress.type.toLowerCase() && deal.business.toLowerCase() === currentAddress.name.toLowerCase()) {
             return deal;
+          } else if(deal.business.toLowerCase() === currentAddress.name.toLowerCase()) {
+            return deal;
           }
         }).sort((a: any, b: any) => {
           if(a.discount > b.discount) {
@@ -245,11 +247,13 @@ function Home() {
         <FlatList 
           data={dealList}
           renderItem={({item, index}) => (
-            <TouchableOpacity onPress={() => deleteDealFromList(index)}>
-              <View style={styles.item}>
-                <MaterialIcons name='delete' size={18} color='#333'></MaterialIcons>
-                <Text>{item.name} Bank has a discount of {item.discount}% for {item.type} type {item.business && item.business.length > 0 ? "at "+(item.business === 'any' ? 'any business' :  item.business) : null}</Text>
-              </View>
+            <TouchableOpacity>
+              <Card>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <MaterialIcons name='delete' size={18} color='#333' onPress={() => deleteDealFromList(index)}></MaterialIcons>
+                  <Text>{item.name} Bank has a discount of {item.discount}% for {item.type} type {item.business && item.business.length > 0 ? "at "+(item.business === 'any' ? 'any business' :  item.business) : null}</Text>
+                </View>
+              </Card>
             </TouchableOpacity>
           )}
         />
