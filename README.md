@@ -13,9 +13,8 @@ A proximity-based deal finder application that leverages your credit card deal s
 - Stretch goal - Use Generative AI to get insights from deals achieved
 
 You can find the app on Apple store. Some of the App screenshots are available here. Thanks for your support.
-
-<img src="images/1.PNG" alt="Main Page" width="200">
-
-<img src="images/2.PNG" alt="Add Deal" width="200">
-
-<img src="images/3.PNG" alt="Receive Notifications" width="200">
+<p float="left">
+    <img src="images/1.PNG" alt="Main Page" width="200"/>
+    <img src="images/2.PNG" alt="Add Deal" width="200"/>
+    <img src="images/3.PNG" alt="Receive Notifications" width="200"/>
+</p>
