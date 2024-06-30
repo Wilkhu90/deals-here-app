@@ -249,7 +249,7 @@ function Home() {
           renderItem={({item, index}) => (
             <TouchableOpacity>
               <Card>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: 300 }}>
                   <MaterialIcons name='delete' size={18} color='#333' onPress={() => deleteDealFromList(index)}></MaterialIcons>
                   <Text>{item.name} Bank has a discount of {item.discount}% for {item.type} type {item.business && item.business.length > 0 ? "at "+(item.business === 'any' ? 'any business' :  item.business) : null}</Text>
                 </View>
