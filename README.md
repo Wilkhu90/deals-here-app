@@ -1,4 +1,4 @@
-# Deals here Application
+# Deals here!
 A proximity-based deal finder application leveraging your credit card deal subscriptions, emphasizing low-latency, data privacy, and local push notifications. We utilize open-source APIs to eliminate costs associated with finding great deals for you.
 
 ## Features
